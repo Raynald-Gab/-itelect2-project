@@ -23,7 +23,7 @@ fs
       file.indexOf('.') !== 0 &&
       file !== basename &&
       file.slice(-4) === '.cjs' &&
-      file.indexOf('.test.js') === -1
+      file.indexOf('.test.cjs') === -1
     );
   })
   .forEach(file => {

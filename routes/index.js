@@ -1,76 +1,90 @@
 const express = require('express');
 const router = express.Router();
-const { tasks, fetchSampleUsers, validateTask, mergeTaskUpdate } = require('../utils.js');
+const db = require('../models/index.cjs');
 
-let cachedUsers = [];
+const { Task, User } = db;
 
-fetchSampleUsers()
-  .then((users) => {
-    cachedUsers = users;
-    console.log('Sample users successfully cached.');
-  })
-  .catch((err) => {
-    console.error('Error fetching users:', err.message);
-  });
-
-router.get('/tasks', (req, res) => {
-  res.json(tasks);
-});
-
-router.get('/tasks/:id', (req, res) => {
-  const taskId = parseInt(req.params.id, 10);
-  const task = tasks.find((t) => t.id === taskId);
-
-  if (!task) {
-    return res.status(404).json({ error: `Task with id ${req.params.id} not found.` });
+router.get('/tasks', async (req, res, next) => {
+  try {
+    const tasks = await Task.findAll({
+      include: User,
+      order: [['id', 'ASC']]
+    });
+    return res.status(200).json(tasks);
+  } catch (error) {
+    next(error);
   }
-
-  res.json(task);
 });
 
-router.post('/tasks', (req, res) => {
-  if (!validateTask(req.body)) {
-    return res.status(400).json({ error: 'Invalid task data. Title and dueDate are required.' });
+router.get('/tasks/:id', async (req, res, next) => {
+  try {
+    const taskId = req.params.id;
+    const task = await Task.findByPk(taskId, { include: User });
+
+    if (!task) {
+      return res.status(404).json({ error: `Task with id ${taskId} not found.` });
+    }
+
+    return res.status(200).json(task);
+  } catch (error) {
+    next(error);
   }
-
-  const newTask = {
-    id: tasks.length ? Math.max(...tasks.map((t) => t.id)) + 1 : 1,
-    completed: false,
-    ...req.body
-  };
-
-  tasks.push(newTask);
-  res.status(201).json(newTask);
 });
 
-router.put('/tasks/:id', (req, res) => {
-  const taskId = parseInt(req.params.id, 10);
-  const taskIndex = tasks.findIndex((t) => t.id === taskId);
-
-  if (taskIndex === -1) {
-    return res.status(404).json({ error: `Task with id ${req.params.id} not found.` });
+router.post('/tasks', async (req, res, next) => {
+  try {
+    const newTask = await Task.create(req.body);
+    return res.status(201).json(newTask);
+  } catch (error) {
+    next(error);
   }
-
-  const updatedTask = mergeTaskUpdate(tasks[taskIndex], req.body);
-  tasks[taskIndex] = updatedTask;
-
-  res.status(200).json(updatedTask);
 });
 
-router.delete('/tasks/:id', (req, res) => {
-  const taskId = parseInt(req.params.id, 10);
-  const taskIndex = tasks.findIndex((t) => t.id === taskId);
+router.put('/tasks/:id', async (req, res, next) => {
+  try {
+    const taskId = req.params.id;
+    const task = await Task.findByPk(taskId);
 
-  if (taskIndex === -1) {
-    return res.status(404).json({ error: `Task with id ${req.params.id} not found.` });
+    if (!task) {
+      return res.status(404).json({ error: `Task with id ${taskId} not found.` });
+    }
+
+    await task.update(req.body);
+    return res.status(200).json(task);
+  } catch (error) {
+    next(error);
   }
-
-  tasks.splice(taskIndex, 1);
-  res.status(200).json({ message: `Task with id ${taskId} deleted successfully.` });
 });
 
-router.get('/users', (req, res) => {
-  res.json(cachedUsers);
+router.delete('/tasks/:id', async (req, res, next) => {
+  try {
+    const taskId = req.params.id;
+    const task = await Task.findByPk(taskId);
+
+    if (!task) {
+      return res.status(404).json({ error: `Task with id ${taskId} not found.` });
+    }
+
+    await task.destroy();
+    return res.status(200).json({ 
+      message: `Task with id ${taskId} deleted successfully.`, 
+      task 
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get('/users', async (req, res, next) => {
+  try {
+    const users = await User.findAll({
+      include: Task,
+      order: [['id', 'ASC']]
+    });
+    return res.status(200).json(users);
+  } catch (error) {
+    next(error);
+  }
 });
 
 module.exports = router;
