@@ -11,6 +11,7 @@ app.use(cors());
 app.use(morgan('dev'));
 app.use(express.json());
 
+// Root route
 app.get('/', (req, res) => {
   res.send('API is running! Visit http://localhost:3000/api/tasks or http://localhost:3000/api/users');
 });
