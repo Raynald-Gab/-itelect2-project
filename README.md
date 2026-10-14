@@ -14,3 +14,10 @@ My IT Elective 2 backend web development project.
 
 ### DELETE /api/tasks/:id
 ![DELETE Request](Delete.png)
+
+### Deployment
+![Deployment](image.png)
+
+## Live URL
+
+https://itelect2-project-cph0.onrender.com
